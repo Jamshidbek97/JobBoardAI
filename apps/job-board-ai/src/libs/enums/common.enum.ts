@@ -1,0 +1,46 @@
+import { registerEnumType } from '@nestjs/graphql';
+
+export enum Message {
+	SOMETHING_WENT_WRONG = 'Something went wrong',
+	NO_DATA_FOUND = 'No data found',
+	CREATE_FAILED = 'Create failed',
+	UPDATE_FAILED = 'Update failed',
+	DELETE_FAILED = 'Delete failed',
+	REMOVE_FAILED = 'Remove failed',
+	UPLOAD_FAILED = 'Upload failed',
+	BAD_REQUEST = 'Bad request',
+	USER_NOT_FOUND = 'User not found',
+	USER_ALREADY_EXISTS = 'User already exists',
+	INVALID_CREDENTIALS = 'Invalid credentials',
+	INVALID_INPUT = 'Invalid input',
+	UNAUTHORIZED = 'Unauthorized',
+	ACCESS_DENIED = 'Access denied',
+	WRONG_PASSWORD = 'Wrong password',
+	BLOCKED = 'Account is locked',
+	ACCOUNT_NOT_VERIFIED = 'Account not verified',
+	FORBIDDEN = 'Forbidden',
+	NOT_AUTHENTICATED = 'Not authenticated',
+	TOKEN_EXPIRED = 'Token expired',
+	TOKEN_NOT_EXIST = 'Token does not exist',
+	NOT_FOUND = 'Not found',
+	INTERNAL_SERVER_ERROR = 'Internal server error',
+	ONLY_SPECIFIC_MEMBER_CAN_ACCESS = 'Only specific member can access',
+	REQUEST_NOT_ALLOWED = 'Request not allowed',
+	PROVIDE_ALLOWED_FILE_TYPE = 'Please provide allowed file type: jpg, jpeg, png, pdf',
+	PROVIDE_ALLOWED_FILE_SIZE = 'Please provide allowed file size: 5MB',
+	SELF_SUBSCRIPTION_DENIED = 'Self subscription denied',
+	SERVICE_UNAVAILABLE = 'Service unavailable',
+	CONFLICT = 'Conflict',
+	CREATED = 'Created',
+	UPDATED = 'Updated',
+	DELETED = 'Deleted',
+	SUCCESS = 'Success',
+	OPERATION_FAILED = 'Operation failed',
+	OPERATION_SUCCESSFUL = 'Operation successful',
+}
+
+export enum Direction {
+	ASC = 1,
+	DESC = -1,
+}
+registerEnumType(Direction, { name: 'Direction' });

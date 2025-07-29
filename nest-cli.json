@@ -1,8 +1,32 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/job-board-ai/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/job-board-ai/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/job-board-ai",
+  "projects": {
+    "job-board-ai": {
+      "type": "application",
+      "root": "apps/job-board-ai",
+      "entryFile": "main",
+      "sourceRoot": "apps/job-board-ai/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/job-board-ai/tsconfig.app.json"
+      }
+    },
+    "job-board-batch": {
+      "type": "application",
+      "root": "apps/job-board-batch",
+      "entryFile": "main",
+      "sourceRoot": "apps/job-board-batch/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/job-board-batch/tsconfig.app.json"
+      }
+    }
   }
 }
