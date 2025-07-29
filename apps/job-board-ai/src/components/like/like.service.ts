@@ -49,7 +49,7 @@ export class LikeService {
       : [];
   }
 
-  public async getFavoriteProperties(
+  public async getFavoriteJobs(
     memberId: ObjectId,
     input: OrdinaryInquiry,
   ): Promise<Jobs> {

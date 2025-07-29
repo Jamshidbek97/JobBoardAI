@@ -38,15 +38,15 @@ export class NestarBatchService {
     console.log('batchRollback');
   }
 
-  public async batchTopProperties(): Promise<void> {
-    const properties: Job[] = await this.jobModel
+  public async batchTopJobs(): Promise<void> {
+    const jobs: Job[] = await this.jobModel
       .find({
         jobStatus: JobStatus.OPEN,
         jobRank: 0,
       })
       .exec();
 
-    const promisedList = properties.map(async (ele: Job) => {
+    const promisedList = jobs.map(async (ele: Job) => {
       const { _id, jobLikes, jobViews } = ele;
       const rank = jobLikes * 2 + jobViews * 1;
       return await this.jobModel.findByIdAndUpdate(_id, { JobRank: rank });
@@ -65,18 +65,9 @@ export class NestarBatchService {
       .exec();
 
     const promisedList = agents.map(async (ele: Member) => {
-      const {
-        _id,
-        memberProperties,
-        memberViews,
-        memberLikes,
-        memberArticles,
-      } = ele;
+      const { _id, memberJobs, memberViews, memberLikes, memberArticles } = ele;
       const rank =
-        memberProperties * 4 +
-        memberArticles * 3 +
-        memberLikes * 2 +
-        memberViews * 1;
+        memberJobs * 4 + memberArticles * 3 + memberLikes * 2 + memberViews * 1;
 
       return await this.memberModel.findByIdAndUpdate(_id, {
         memberRank: rank,

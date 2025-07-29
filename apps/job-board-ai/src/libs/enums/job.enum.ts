@@ -18,6 +18,7 @@ export enum JobStatus {
   OPEN = 'OPEN',
   CLOSED = 'CLOSED',
   PENDING = 'PENDING',
+  DELETE = 'DELETE',
 }
 
 export enum SalaryRange {
