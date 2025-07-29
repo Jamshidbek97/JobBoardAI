@@ -71,16 +71,16 @@ export class MemberResolver {
     return await this.memberService.updateMember(memberId, input);
   }
 
-  //   @UseGuards(WithoutGuard)
-  //   @Query(() => Member)
-  //   public async getMember(
-  //     @Args('memberId') input: string,
-  //     @AuthMember('_id') memberId: ObjectId,
-  //   ): Promise<Member> {
-  //     console.log('Mutation: getMember');
-  //     const targetId = shapeIntoMongooseObjectId(input);
-  //     return await this.memberService.getMember(memberId, targetId);
-  //   }
+  @UseGuards(WithoutGuard)
+  @Query(() => Member)
+  public async getMember(
+    @Args('memberId') input: string,
+    @AuthMember('_id') memberId: ObjectId,
+  ): Promise<Member> {
+    console.log('Mutation: getMember');
+    const targetId = shapeIntoMongooseObjectId(input);
+    return await this.memberService.getMember(memberId, targetId);
+  }
 
   @UseGuards(WithoutGuard)
   @Query(() => Members)
@@ -92,16 +92,16 @@ export class MemberResolver {
     return await this.memberService.getAgents(memberId, input);
   }
 
-  //   @UseGuards(AuthGuard)
-  //   @Mutation(() => Member)
-  //   public async likeTargetMember(
-  //     @Args('memberId') input: string,
-  //     @AuthMember('_id') memberId: ObjectId,
-  //   ): Promise<Member> {
-  //     console.log('Mutation: likeTargetMember');
-  //     const likeRefId = shapeIntoMongooseObjectId(input);
-  //     return await this.memberService.likeTargetMember(memberId, likeRefId);
-  //   }
+  @UseGuards(AuthGuard)
+  @Mutation(() => Member)
+  public async likeTargetMember(
+    @Args('memberId') input: string,
+    @AuthMember('_id') memberId: ObjectId,
+  ): Promise<Member> {
+    console.log('Mutation: likeTargetMember');
+    const likeRefId = shapeIntoMongooseObjectId(input);
+    return await this.memberService.likeTargetMember(memberId, likeRefId);
+  }
 
   /** Auth: Admin */
   @Roles(MemberType.ADMIN)

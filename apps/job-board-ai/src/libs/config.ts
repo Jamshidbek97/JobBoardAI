@@ -17,7 +17,7 @@ export const availableMembersSorts = [
   'memberViews',
 ];
 
-export const availableOptions = ['remote', 'fullTime', 'contract'];
+export const availableJobOptions = ['remote', 'fullTime', 'contract'];
 export const availableJobSorts = [
   'createdAt',
   'updatedAt',
