@@ -42,8 +42,8 @@ export class Member {
   @Field(() => String, { nullable: true })
   memberDesc?: string;
 
-  @Field(() => Int)
-  memberJobs: number;
+  @Field(() => Int, { nullable: true })
+  memberPostedJobs?: number;
 
   @Field(() => Int, { nullable: true })
   memberArticles: number;

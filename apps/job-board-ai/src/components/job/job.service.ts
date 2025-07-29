@@ -44,7 +44,7 @@ export class JobService {
       const result = await this.jobModel.create(input);
       await this.memberService.memberStatsEditor({
         _id: result.memberId,
-        targetKey: 'memberJobs',
+        targetKey: 'memberPostedJobs',
         modifier: 1,
       });
       console.log(result);
@@ -117,7 +117,7 @@ export class JobService {
     if (closedAt || deletedAt) {
       await this.memberService.memberStatsEditor({
         _id: memberId,
-        targetKey: 'memberJobs',
+        targetKey: 'memberPostedJobs',
         modifier: -1,
       });
     }
@@ -167,9 +167,9 @@ export class JobService {
       roomsList,
       bedsList,
       typeList,
-      pricesRange,
+      pricesRange: salaryRange,
       periodsRange,
-      squaresRange,
+      experienceRange,
       options,
       text,
     } = input.search;
@@ -181,12 +181,15 @@ export class JobService {
     if (bedsList && bedsList.length) match.jobBeds = { $in: bedsList };
     if (typeList && typeList.length) match.jobType = { $in: typeList };
 
-    if (pricesRange)
-      match.jobPrice = { $gte: pricesRange.start, $lte: pricesRange.end };
+    if (salaryRange)
+      match.jobSalary = { $gte: salaryRange.start, $lte: salaryRange.end };
     if (periodsRange)
       match.createdAt = { $gte: periodsRange.start, $lte: periodsRange.end };
-    if (squaresRange)
-      match.jobSquare = { $gte: squaresRange.start, $lte: squaresRange.end };
+    if (experienceRange)
+      match.experienceYears = {
+        $gte: experienceRange.start,
+        $lte: experienceRange.end,
+      };
 
     if (text) match.jobTitle = { $regex: new RegExp(text, 'i') };
     if (options) {
@@ -330,7 +333,7 @@ export class JobService {
     if (closedAt || deletedAt) {
       await this.memberService.memberStatsEditor({
         _id: result.memberId,
-        targetKey: 'memberJobs',
+        targetKey: 'memberPostedJobs',
         modifier: -1,
       });
     }

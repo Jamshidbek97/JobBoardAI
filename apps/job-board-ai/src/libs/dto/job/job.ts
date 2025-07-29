@@ -25,10 +25,10 @@ export class Job {
   jobTitle: string;
 
   @Field(() => Number)
-  jobPrice: number;
+  jobSalary: number;
 
   @Field(() => Number)
-  jobSquare: number;
+  experienceYears: number;
 
   @Field(() => Int)
   jobBeds: number;
@@ -48,8 +48,11 @@ export class Job {
   @Field(() => Int)
   jobRank: number;
 
-  @Field(() => [String])
-  jobImages: string[];
+  @Field(() => [String], { nullable: true })
+  jobImages?: string[];
+
+  @Field(() => String)
+  companyLogo: string;
 
   @Field(() => String, { nullable: true })
   jobDesc?: string;

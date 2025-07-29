@@ -65,9 +65,18 @@ export class NestarBatchService {
       .exec();
 
     const promisedList = agents.map(async (ele: Member) => {
-      const { _id, memberJobs, memberViews, memberLikes, memberArticles } = ele;
+      const {
+        _id,
+        memberPostedJobs,
+        memberViews,
+        memberLikes,
+        memberArticles,
+      } = ele;
       const rank =
-        memberJobs * 4 + memberArticles * 3 + memberLikes * 2 + memberViews * 1;
+        memberPostedJobs * 4 +
+        memberArticles * 3 +
+        memberLikes * 2 +
+        memberViews * 1;
 
       return await this.memberModel.findByIdAndUpdate(_id, {
         memberRank: rank,

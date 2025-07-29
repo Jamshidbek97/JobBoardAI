@@ -33,11 +33,11 @@ export class JobUpdate {
 
   @IsOptional()
   @Field(() => Number, { nullable: true })
-  jobPrice?: number;
+  jobSalary?: number;
 
   @IsOptional()
   @Field(() => Number, { nullable: true })
-  jobSquare?: number;
+  experienceYears?: number;
 
   @IsOptional()
   @IsInt()
@@ -54,6 +54,10 @@ export class JobUpdate {
   @IsOptional()
   @Field(() => [String], { nullable: true })
   jobImages?: string[];
+
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  companyLogo?: string;
 
   @IsOptional()
   @Length(5, 500)
