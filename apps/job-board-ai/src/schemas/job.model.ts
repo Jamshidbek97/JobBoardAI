@@ -4,7 +4,7 @@ import {
   JobType,
   JobStatus,
   JobLocation,
-  SalaryRange,
+  EducationLevel,
 } from '../libs/enums/job.enum';
 
 @Schema({ timestamps: true })
@@ -24,14 +24,23 @@ export class Job extends Document {
   @Prop({ required: true })
   positionTitle: string;
 
-  @Prop({ type: String, enum: SalaryRange, required: true })
-  salaryRange: SalaryRange;
+  @Prop({ type: Number, required: true })
+  jobSalary: number;
+
+  @Prop({ type: Number, required: true })
+  experienceYears: number;
+
+  @Prop({ type: String, enum: EducationLevel, required: true })
+  educationLevel: EducationLevel;
 
   @Prop({ type: String })
-  description?: string;
+  jobDesc?: string;
 
-  @Prop([String])
-  companyLogo?: string[];
+  @Prop({ type: [String] })
+  skillsRequired?: string[];
+
+  @Prop({ type: String })
+  companyLogo?: string;
 
   @Prop({ default: 0 })
   jobViews: number;

@@ -1,6 +1,11 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 import { ObjectId } from 'mongoose';
-import { JobLocation, JobStatus, JobType } from '../../enums/job.enum';
+import {
+  EducationLevel,
+  JobLocation,
+  JobStatus,
+  JobType,
+} from '../../enums/job.enum';
 import { Member, TotalCounter } from '../member/member';
 import { MeLiked } from '../like/like';
 
@@ -19,22 +24,19 @@ export class Job {
   jobLocation: JobLocation;
 
   @Field(() => String)
-  jobAddress: string;
-
-  @Field(() => String)
-  jobTitle: string;
+  positionTitle: string;
 
   @Field(() => Number)
   jobSalary: number;
 
+  @Field(() => [String], { nullable: true })
+  skillsRequired?: string[];
+
   @Field(() => Number)
   experienceYears: number;
 
-  @Field(() => Int)
-  jobBeds: number;
-
-  @Field(() => Int)
-  jobRooms: number;
+  @Field(() => EducationLevel)
+  educationLevel: EducationLevel;
 
   @Field(() => Int)
   jobViews: number;
@@ -57,12 +59,6 @@ export class Job {
   @Field(() => String, { nullable: true })
   jobDesc?: string;
 
-  @Field(() => Boolean)
-  jobBarter: boolean;
-
-  @Field(() => Boolean)
-  jobRent: boolean;
-
   @Field(() => String)
   memberId: ObjectId;
 
@@ -71,9 +67,6 @@ export class Job {
 
   @Field(() => Date, { nullable: true })
   deletedAt?: Date;
-
-  @Field(() => Date, { nullable: true })
-  constructedAt?: Date;
 
   @Field(() => Date)
   createdAt: Date;

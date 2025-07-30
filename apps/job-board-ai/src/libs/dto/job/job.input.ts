@@ -1,13 +1,12 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
+import { IsIn, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
 import {
-  IsIn,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  Length,
-  Min,
-} from 'class-validator';
-import { JobLocation, JobStatus, JobType } from '../../enums/job.enum';
+  EducationLevel,
+  EmploymentLevel,
+  JobLocation,
+  JobStatus,
+  JobType,
+} from '../../enums/job.enum';
 import { ObjectId } from 'mongoose';
 import { availableJobOptions, availableJobSorts } from '../../config';
 import { Direction } from '../../enums/common.enum';
@@ -30,7 +29,12 @@ export class JobInput {
   @IsNotEmpty()
   @Length(3, 100)
   @Field(() => String)
-  jobTitle: string;
+  companyName: string;
+
+  @IsNotEmpty()
+  @Length(3, 100)
+  @Field(() => String)
+  positionTitle: string;
 
   @IsNotEmpty()
   @Field(() => Number)
@@ -40,17 +44,24 @@ export class JobInput {
   @Field(() => Number)
   experienceYears: number;
 
-  @IsNotEmpty()
-  @IsInt()
-  @Min(1)
-  @Field(() => Int)
-  jobBeds: number;
+  @Field(() => EducationLevel, { nullable: true })
+  educationLevel: EducationLevel;
 
   @IsNotEmpty()
-  @IsInt()
-  @Min(1)
-  @Field(() => Int)
-  jobRooms: number;
+  @Field(() => EmploymentLevel)
+  employmentLevel: EmploymentLevel;
+
+  @IsOptional()
+  @Field(() => [String], { nullable: true })
+  skillsRequired?: string[];
+
+  @IsOptional()
+  @Field(() => Boolean, { nullable: true })
+  isRemote?: boolean;
+
+  @IsOptional()
+  @Field(() => Date, { nullable: true })
+  deadline?: Date;
 
   @IsOptional()
   @Field(() => [String], { nullable: true })
@@ -65,18 +76,7 @@ export class JobInput {
   @Field(() => String, { nullable: true })
   jobDesc?: string;
 
-  @IsOptional()
-  @Field(() => Boolean, { nullable: true })
-  jobBarter?: boolean;
-
-  @Field(() => Boolean, { nullable: true })
-  jobRent?: boolean;
-
   memberId: ObjectId;
-
-  @IsOptional()
-  @Field(() => Date, { nullable: true })
-  constructedAt?: Date;
 }
 
 @InputType()
@@ -121,14 +121,6 @@ export class JISearch {
   typeList?: JobType[];
 
   @IsOptional()
-  @Field(() => [Int], { nullable: true })
-  roomsList?: Number[];
-
-  @IsOptional()
-  @Field(() => [Int], { nullable: true })
-  bedsList?: Number[];
-
-  @IsOptional()
   @IsIn(availableJobOptions, { each: true })
   @Field(() => [String], { nullable: true })
   options?: string[];
@@ -144,6 +136,21 @@ export class JISearch {
   @IsOptional()
   @Field(() => ExperienceRange, { nullable: true })
   experienceRange?: ExperienceRange;
+
+  @Field(() => [EducationLevel], { nullable: true })
+  educationLevelList?: EducationLevel[];
+
+  @IsOptional()
+  @Field(() => [EmploymentLevel], { nullable: true })
+  employmentLevels?: EmploymentLevel[];
+
+  @IsOptional()
+  @Field(() => [String], { nullable: true })
+  skillsRequired?: string[];
+
+  @IsOptional()
+  @Field(() => Boolean, { nullable: true })
+  isRemote?: boolean;
 
   @IsOptional()
   @Field(() => String, { nullable: true })

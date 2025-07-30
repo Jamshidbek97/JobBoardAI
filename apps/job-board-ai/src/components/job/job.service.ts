@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -41,7 +42,15 @@ export class JobService {
 
   public async createJob(input: JobInput): Promise<Job> {
     try {
-      const result = await this.jobModel.create(input);
+      const existing = await this.jobModel.findOne({
+        memberId: input.memberId,
+        positionTitle: input.positionTitle,
+        companyName: input.companyName,
+      });
+      if (existing) throw new ConflictException('You already posted this job.');
+      if (!input.memberId)
+        throw new BadRequestException('Member ID is missing');
+      const result = await await this.jobModel.create(input);
       await this.memberService.memberStatsEditor({
         _id: result.memberId,
         targetKey: 'memberPostedJobs',
@@ -164,10 +173,12 @@ export class JobService {
     const {
       memberId,
       locationList,
-      roomsList,
-      bedsList,
+      educationLevelList,
       typeList,
-      pricesRange: salaryRange,
+      employmentLevels,
+      skillsRequired,
+      isRemote,
+      salaryRange,
       periodsRange,
       experienceRange,
       options,
@@ -177,10 +188,13 @@ export class JobService {
     if (memberId) match.memberId = shapeIntoMongooseObjectId(memberId);
     if (locationList && locationList.length)
       match.jobLocation = { $in: locationList };
-    if (roomsList && roomsList.length) match.jobRooms = { $in: roomsList };
-    if (bedsList && bedsList.length) match.jobBeds = { $in: bedsList };
+    if (educationLevelList && educationLevelList.length)
+      match.educationLevel = { $in: educationLevelList };
     if (typeList && typeList.length) match.jobType = { $in: typeList };
-
+    if (employmentLevels?.length)
+      match.employmentLevel = { $in: employmentLevels };
+    if (skillsRequired?.length) match.skillsRequired = { $all: skillsRequired };
+    if (typeof isRemote === 'boolean') match.isRemote = isRemote;
     if (salaryRange)
       match.jobSalary = { $gte: salaryRange.start, $lte: salaryRange.end };
     if (periodsRange)
@@ -191,7 +205,7 @@ export class JobService {
         $lte: experienceRange.end,
       };
 
-    if (text) match.jobTitle = { $regex: new RegExp(text, 'i') };
+    if (text) match.positionTitle = { $regex: new RegExp(text, 'i') };
     if (options) {
       match['$or'] = options.map((ele) => {
         return { [ele]: true };

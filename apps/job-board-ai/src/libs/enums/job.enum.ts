@@ -14,6 +14,13 @@ export enum JobLocation {
   REMOTE = 'REMOTE',
 }
 
+export enum EducationLevel {
+  HIGH_SCHOOL = 'HIGH_SCHOOL',
+  BACHELOR = 'BACHELOR',
+  MASTER = 'MASTER',
+  DOCTORATE = 'DOCTORATE',
+}
+
 export enum JobStatus {
   OPEN = 'OPEN',
   CLOSED = 'CLOSED',
@@ -27,7 +34,16 @@ export enum SalaryRange {
   HIGH = 'HIGH',
 }
 
+export enum EmploymentLevel {
+  JUNIOR = 'JUNIOR',
+  MID = 'MID',
+  SENIOR = 'SENIOR',
+  LEAD = 'LEAD',
+}
+
 registerEnumType(JobType, { name: 'JobType' });
 registerEnumType(JobLocation, { name: 'JobLocation' });
 registerEnumType(JobStatus, { name: 'JobStatus' });
+registerEnumType(EducationLevel, { name: 'EducationLevel' });
 registerEnumType(SalaryRange, { name: 'SalaryRange' });
+registerEnumType(EmploymentLevel, { name: 'EmploymentLevel' });
