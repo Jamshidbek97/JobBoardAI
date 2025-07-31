@@ -141,9 +141,6 @@ export class JobService {
     };
 
     this.shapeMatchQuery(match, input);
-    console.log('match', match);
-    const jobs = await this.jobModel.find({}).limit(1);
-    console.log('Example job._id:', jobs[0]._id);
 
     const result = await this.jobModel
       .aggregate([
@@ -154,9 +151,19 @@ export class JobService {
             list: [
               { $skip: (input.page - 1) * input.limit },
               { $limit: input.limit },
+              {
+                $addFields: {
+                  memberId: { $toObjectId: '$memberId' },
+                },
+              },
               lookupAuhMemberLiked(memberId),
               lookupMember,
-              { $unwind: '$memberData' },
+              {
+                $unwind: {
+                  path: '$memberData',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
             ],
             metaCounter: [{ $count: 'total' }],
           },
@@ -252,8 +259,18 @@ export class JobService {
             list: [
               { $skip: (input.page - 1) * input.limit },
               { $limit: input.limit },
+              {
+                $addFields: {
+                  memberId: { $toObjectId: '$memberId' },
+                },
+              },
               lookupMember,
-              { $unwind: '$memberData' },
+              {
+                $unwind: {
+                  path: '$memberData',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
             ],
             metaCounter: [{ $count: 'total' }],
           },
