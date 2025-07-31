@@ -325,6 +325,11 @@ export class JobService {
 
     const result = await this.jobModel
       .aggregate([
+        {
+          $addFields: {
+            memberId: { $toObjectId: '$memberId' },
+          },
+        },
         { $match: match },
         { $sort: sort },
         {
@@ -349,13 +354,17 @@ export class JobService {
   public async updateJobByAdmin(input: JobUpdate): Promise<Job> {
     let { jobStatus, closedAt, deletedAt, _id } = input;
 
+    if (![JobStatus.CLOSED, JobStatus.DELETE].includes(jobStatus))
+      throw new BadRequestException('Invalid status update');
+
     const search: T = {
       _id: _id,
       jobStatus: JobStatus.OPEN,
     };
 
-    if (jobStatus === JobStatus.CLOSED) closedAt = moment().toDate();
-    else if (jobStatus === JobStatus.DELETE) deletedAt = moment().toDate();
+    if (jobStatus === JobStatus.CLOSED) input.closedAt = moment().toDate();
+    else if (jobStatus === JobStatus.DELETE)
+      input.deletedAt = moment().toDate();
 
     const result = await this.jobModel
       .findOneAndUpdate(search, input, { new: true })
