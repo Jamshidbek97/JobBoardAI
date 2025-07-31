@@ -252,6 +252,11 @@ export class JobService {
 
     const result = await this.jobModel
       .aggregate([
+        {
+          $addFields: {
+            memberId: { $toObjectId: '$memberId' },
+          },
+        },
         { $match: match },
         { $sort: sort },
         {
@@ -259,11 +264,7 @@ export class JobService {
             list: [
               { $skip: (input.page - 1) * input.limit },
               { $limit: input.limit },
-              {
-                $addFields: {
-                  memberId: { $toObjectId: '$memberId' },
-                },
-              },
+
               lookupMember,
               {
                 $unwind: {
