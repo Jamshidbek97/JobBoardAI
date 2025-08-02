@@ -384,7 +384,7 @@ export class JobService {
   public async removeJobByAdmin(jobId: ObjectId): Promise<Job> {
     const search: T = {
       _id: jobId,
-      jobStatus: JobStatus.DELETE,
+      jobStatus: JobStatus.CLOSED,
     };
 
     const result = await this.jobModel.findOneAndDelete(search).exec();
