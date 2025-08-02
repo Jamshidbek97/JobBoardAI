@@ -69,18 +69,47 @@ export class LikeService {
           },
         },
         { $unwind: '$favoriteJob' },
+
+        // STEP: Bring job's memberId to top level to use in lookup
+        {
+          $addFields: {
+            memberIdForLookup: { $toObjectId: '$favoriteJob.memberId' },
+          },
+        },
+
+        {
+          $lookup: {
+            from: 'members',
+            localField: 'memberIdForLookup',
+            foreignField: '_id',
+            as: 'memberData',
+          },
+        },
+        { $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+
+        // STEP: Merge memberData into job
+        {
+          $addFields: {
+            'favoriteJob.memberData': '$memberData',
+          },
+        },
+
+        // Clean up if needed
+        {
+          $project: {
+            memberIdForLookup: 0,
+            memberData: 0,
+          },
+        },
+
         {
           $facet: {
-            list: [
-              { $skip: (page - 1) * limit },
-              { $limit: limit },
-              lookupFavorite,
-              { $unwind: '$favoriteJob.memberData' },
-            ],
+            list: [{ $skip: (page - 1) * limit }, { $limit: limit }],
             metaCounter: [{ $count: 'total' }],
           },
         },
       ])
+
       .exec();
     console.log('Data', data);
     const result: Jobs = { list: [], metaCounter: data[0].metaCounter };
