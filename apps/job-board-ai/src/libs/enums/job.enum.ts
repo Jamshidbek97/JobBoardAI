@@ -11,6 +11,11 @@ export enum JobLocation {
   SEOUL = 'SEOUL',
   BUSAN = 'BUSAN',
   DAEGU = 'DAEGU',
+  GYEONGJU = 'GYEONGJU',
+  INCHEON = 'INCHEON',
+  GWANGJU = 'GWANGJU',
+  CHONJU = 'CHONJU',
+  JEJU = 'JEJU',
   REMOTE = 'REMOTE',
 }
 
