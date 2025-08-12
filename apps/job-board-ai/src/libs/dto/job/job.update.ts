@@ -2,6 +2,7 @@ import { Field, Int, InputType } from '@nestjs/graphql';
 import { ObjectId } from 'mongoose';
 import {
   EducationLevel,
+  EmploymentLevel,
   JobLocation,
   JobStatus,
   JobType,
@@ -50,6 +51,10 @@ export class JobUpdate {
 
   @Field(() => EducationLevel, { nullable: true })
   educationLevel?: EducationLevel;
+
+  @IsOptional()
+  @Field(() => EmploymentLevel, { nullable: true })
+  employmentLevel?: EmploymentLevel;
 
   @IsOptional()
   @Field(() => [String], { nullable: true })

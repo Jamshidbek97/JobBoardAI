@@ -21,10 +21,10 @@ export class JobInput {
   @Field(() => JobLocation)
   jobLocation: JobLocation;
 
-  @IsNotEmpty()
+  @IsOptional()
   @Length(3, 100)
-  @Field(() => String)
-  jobAddress: string;
+  @Field(() => String, { nullable: true })
+  jobAddress?: string;
 
   @IsNotEmpty()
   @Length(3, 100)
@@ -44,7 +44,8 @@ export class JobInput {
   @Field(() => Number)
   experienceYears: number;
 
-  @Field(() => EducationLevel, { nullable: true })
+  @IsNotEmpty()
+  @Field(() => EducationLevel)
   educationLevel: EducationLevel;
 
   @IsNotEmpty()
@@ -72,7 +73,7 @@ export class JobInput {
   companyLogo: string;
 
   @IsOptional()
-  @Length(10, 100)
+  @Length(10, 1000)
   @Field(() => String, { nullable: true })
   jobDesc?: string;
 

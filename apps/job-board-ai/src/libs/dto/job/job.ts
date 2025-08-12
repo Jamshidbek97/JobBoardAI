@@ -2,6 +2,7 @@ import { Field, Int, ObjectType } from '@nestjs/graphql';
 import { ObjectId } from 'mongoose';
 import {
   EducationLevel,
+  EmploymentLevel,
   JobLocation,
   JobStatus,
   JobType,
@@ -56,8 +57,14 @@ export class Job {
   @Field(() => String)
   companyLogo: string;
 
+  @Field(() => EmploymentLevel, { nullable: true })
+  employmentLevel?: EmploymentLevel;
+
   @Field(() => String, { nullable: true })
   jobDesc?: string;
+
+  @Field(() => String, { nullable: true })
+  companyName?: string;
 
   @Field(() => String)
   memberId: ObjectId;

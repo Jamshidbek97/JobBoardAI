@@ -5,6 +5,7 @@ import {
   JobStatus,
   JobLocation,
   EducationLevel,
+  EmploymentLevel,
 } from '../libs/enums/job.enum';
 
 @Schema({ timestamps: true })
@@ -32,6 +33,9 @@ export class Job extends Document {
 
   @Prop({ type: String, enum: EducationLevel, required: true })
   educationLevel: EducationLevel;
+
+  @Prop({ type: String, enum: EmploymentLevel, required: true })
+  employmentLevel: EmploymentLevel;
 
   @Prop({ type: String })
   jobDesc?: string;
