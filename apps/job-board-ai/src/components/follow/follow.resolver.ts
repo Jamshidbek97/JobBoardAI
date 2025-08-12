@@ -15,18 +15,18 @@ export class FollowResolver {
 
 	@UseGuards(AuthGuard)
 	@Mutation((returns) => Follower)
-	public async subscribe(@Args('input') input: string, @AuthMember('_id') memberId: ObjectId): Promise<Follower> {
+	public async subscribe(@Args('memberId') memberId: string, @AuthMember('_id') followerId: ObjectId): Promise<Follower> {
 		console.log('Mutation: subscribe');
-		const followingId = shapeIntoMongooseObjectId(input);
-		return await this.followService.subscribe(memberId, followingId);
+		const followingId = shapeIntoMongooseObjectId(memberId);
+		return await this.followService.subscribe(followerId, followingId);
 	}
 
 	@UseGuards(AuthGuard)
 	@Mutation((returns) => Follower)
-	public async unsubscribe(@Args('input') input: string, @AuthMember('_id') memberId: ObjectId): Promise<Follower> {
+	public async unsubscribe(@Args('memberId') memberId: string, @AuthMember('_id') followerId: ObjectId): Promise<Follower> {
 		console.log('Mutation: unSubscribe');
-		const followingId: ObjectId = shapeIntoMongooseObjectId(input);
-		return await this.followService.unsubscribe(memberId, followingId);
+		const followingId: ObjectId = shapeIntoMongooseObjectId(memberId);
+		return await this.followService.unsubscribe(followerId, followingId);
 	}
 
 	@UseGuards(WithoutGuard)
@@ -37,7 +37,9 @@ export class FollowResolver {
 	): Promise<Followings> {
 		console.log('Query: getMemberFollowings');
 		const { followerId } = input.search;
-		input.search.followerId = shapeIntoMongooseObjectId(followerId);
+		if (followerId && String(followerId).trim() !== '') {
+			input.search.followerId = shapeIntoMongooseObjectId(followerId);
+		}
 		return await this.followService.getMemberFollowings(memberId, input);
 	}
 
@@ -46,10 +48,12 @@ export class FollowResolver {
 	public async getMemberFollowers(
 		@Args('input') input: FollowInquiry,
 		@AuthMember('_id') memberId: ObjectId,
-	): Promise<Followings> {
+	): Promise<Followers> {
 		console.log('Query: getMemberFollowers');
 		const { followingId } = input.search;
-		input.search.followingId = shapeIntoMongooseObjectId(followingId);
+		if (followingId && String(followingId).trim() !== '') {
+			input.search.followingId = shapeIntoMongooseObjectId(followingId);
+		}
 		return await this.followService.getMemberFollowers(memberId, input);
 	}
 }

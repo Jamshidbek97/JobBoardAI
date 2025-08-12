@@ -28,7 +28,17 @@ export class FollowService {
 		const targetMember = await this.memberService.getMember(null, followingId);
 		if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
-		const result = await this.registerSubscription(followingId, followerId);
+		// Check if subscription already exists
+		const existingSubscription = await this.followModel.findOne({ 
+			followerId: followerId, 
+			followingId: followingId 
+		}).exec();
+		
+		if (existingSubscription) {
+			throw new BadRequestException(Message.ALREADY_SUBSCRIBED);
+		}
+
+		const result = await this.registerSubscription(followerId, followingId);
 
 		await this.memberService.memberStatsEditor({ _id: followerId, targetKey: 'memberFollowings', modifier: 1 });
 		await this.memberService.memberStatsEditor({ _id: followingId, targetKey: 'memberFollowers', modifier: 1 });
@@ -49,7 +59,10 @@ export class FollowService {
 		const targetMember = await this.memberService.getMember(null, followingId);
 		if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
-		const result = await this.followModel.findOneAndDelete({ followerId: followingId, followingId: followerId }).exec();
+		const result = await this.followModel.findOneAndDelete({ 
+			followerId: followerId, 
+			followingId: followingId 
+		}).exec();
 		if (!result) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
 		await this.memberService.memberStatsEditor({ _id: followerId, targetKey: 'memberFollowings', modifier: -1 });
