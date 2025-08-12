@@ -19,10 +19,11 @@ import {
   getSerialForImage,
   shapeIntoMongooseObjectId,
   validMimeTypes,
+  validUploadTargets,
 } from '../../libs/config';
 import { WithoutGuard } from '../auth/guards/without.guard';
 import { GraphQLUpload, FileUpload } from 'graphql-upload';
-import { createWriteStream } from 'fs';
+import { createWriteStream, mkdirSync, existsSync } from 'fs';
 import { Message } from '../../libs/enums/common.enum';
 
 @Resolver()
@@ -133,7 +134,7 @@ export class MemberResolver {
   public async imageUploader(
     @Args({ name: 'file', type: () => GraphQLUpload })
     { createReadStream, filename, mimetype }: FileUpload,
-    @Args('target') target: String,
+    @Args('target') target: string,
   ): Promise<string> {
     console.log('Mutation: imageUploader');
 
@@ -141,8 +142,20 @@ export class MemberResolver {
     const validMime = validMimeTypes.includes(mimetype);
     if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FILE_TYPE);
 
+    // Validate target
+    if (!validUploadTargets.includes(target)) {
+      throw new Error(`${Message.INVALID_UPLOAD_TARGET}. Allowed targets: ${validUploadTargets.join(', ')}`);
+    }
+
     const imageName = getSerialForImage(filename);
-    const url = `uploads/${target}/${imageName}`;
+    const uploadDir = `uploads/${target}`;
+    const url = `${uploadDir}/${imageName}`;
+    
+    // Create directory if it doesn't exist
+    if (!existsSync(uploadDir)) {
+      mkdirSync(uploadDir, { recursive: true });
+    }
+
     const stream = createReadStream();
 
     const result = await new Promise((resolve, reject) => {
@@ -161,11 +174,23 @@ export class MemberResolver {
   public async imagesUploader(
     @Args('files', { type: () => [GraphQLUpload] })
     files: Promise<FileUpload>[],
-    @Args('target') target: String,
+    @Args('target') target: string,
   ): Promise<string[]> {
     console.log('Mutation: imagesUploader');
 
+    // Validate target
+    if (!validUploadTargets.includes(target)) {
+      throw new Error(`${Message.INVALID_UPLOAD_TARGET}. Allowed targets: ${validUploadTargets.join(', ')}`);
+    }
+
     const uploadedImages = [];
+    const uploadDir = `uploads/${target}`;
+    
+    // Create directory if it doesn't exist
+    if (!existsSync(uploadDir)) {
+      mkdirSync(uploadDir, { recursive: true });
+    }
+
     const promisedList = files.map(
       async (
         img: Promise<FileUpload>,
@@ -178,7 +203,7 @@ export class MemberResolver {
           if (!validMime) throw new Error(Message.PROVIDE_ALLOWED_FILE_TYPE);
 
           const imageName = getSerialForImage(filename);
-          const url = `uploads/${target}/${imageName}`;
+          const url = `${uploadDir}/${imageName}`;
           const stream = createReadStream();
 
           const result = await new Promise((resolve, reject) => {
