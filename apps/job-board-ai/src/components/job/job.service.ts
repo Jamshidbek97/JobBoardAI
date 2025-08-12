@@ -111,7 +111,7 @@ export class JobService {
     let { jobStatus, closedAt, deletedAt, _id } = input;
     const search: T = {
       _id: _id,
-      memberId: memberId,
+      memberId: memberId.toString(), // Convert ObjectId to string since memberId is stored as string
       jobStatus: JobStatus.OPEN,
     };
 
@@ -141,7 +141,13 @@ export class JobService {
     };
 
     this.shapeMatchQuery(match, input);
+    console.log('query', input);
+    console.log('match condition:', match);
 
+    // Debug: Check total jobs in database
+    const totalJobs = await this.jobModel.countDocuments({});
+    console.log('Total jobs in database:', totalJobs);
+    
     const result = await this.jobModel
       .aggregate([
         { $match: match },
@@ -192,7 +198,7 @@ export class JobService {
       text,
     } = input.search;
 
-    if (memberId) match.memberId = shapeIntoMongooseObjectId(memberId);
+    if (memberId) match.memberId = memberId; // Don't convert to ObjectId since memberId is stored as string
     if (locationList && locationList.length)
       match.jobLocation = { $in: locationList };
     if (educationLevelList && educationLevelList.length)
@@ -243,7 +249,7 @@ export class JobService {
       throw new BadRequestException(Message.REQUEST_NOT_ALLOWED);
 
     const match: T = {
-      memberId: memberId,
+      memberId: memberId.toString(), // Convert ObjectId to string since memberId is stored as string
       jobStatus: jobStatus ?? { $ne: JobStatus.DELETE },
     };
     const sort: T = {
