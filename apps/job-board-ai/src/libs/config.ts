@@ -36,10 +36,15 @@ export const availableBoardArticleSorts = [
 
 // IMAGE CONFIGURATION (config.js)
 
-export const validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+export const validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg', 'application/pdf'];
 export const validUploadTargets = ['member', 'job', 'board-article', 'comment'];
 
 export const getSerialForImage = (filename: string) => {
+  const ext = path.parse(filename).ext;
+  return uuidv4() + ext;
+};
+
+export const getSerialForFile = (filename: string) => {
   const ext = path.parse(filename).ext;
   return uuidv4() + ext;
 };
@@ -97,7 +102,7 @@ export const lookupAuhMemberFollowed = (input: LookupAuhMemberFollowed) => {
       from: 'follows',
       let: {
         localFollowerId: followerId,
-        localFollowingId: '$followingId',
+        localFollowingId: followingId,
         localMyFavorite: true,
       },
       pipeline: [
@@ -149,6 +154,46 @@ export const lookupFollowerData = {
     localField: 'followerId',
     foreignField: '_id',
     as: 'followerData',
+  },
+};
+
+// Lookup for job data
+export const lookupJob = {
+  $lookup: {
+    from: 'jobs',
+    localField: 'jobId',
+    foreignField: '_id',
+    as: 'jobData',
+  },
+};
+
+// Lookup for applicant data
+export const lookupApplicant = {
+  $lookup: {
+    from: 'members',
+    localField: 'applicantId',
+    foreignField: '_id',
+    as: 'applicantData',
+  },
+};
+
+// Lookup for company data
+export const lookupCompany = {
+  $lookup: {
+    from: 'members',
+    localField: 'companyId',
+    foreignField: '_id',
+    as: 'companyData',
+  },
+};
+
+// Lookup for board article data
+export const lookupBoardArticle = {
+  $lookup: {
+    from: 'boardarticles',
+    localField: 'articleId',
+    foreignField: '_id',
+    as: 'articleData',
   },
 };
 

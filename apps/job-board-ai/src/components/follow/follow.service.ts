@@ -77,10 +77,21 @@ export class FollowService {
 
 		const match: T = { followerId: search?.followerId };
 		console.log('Match', match);
+		console.log('Search followerId type:', typeof search?.followerId);
+		console.log('Search followerId value:', search?.followerId);
+		
+		// Try to match with both ObjectId and string versions
+		const matchWithConversion: T = { 
+			$or: [
+				{ followerId: search?.followerId },
+				{ followerId: search?.followerId?.toString() }
+			]
+		};
+		console.log('Match with conversion:', matchWithConversion);
 
 		const result = await this.followModel
 			.aggregate([
-				{ $match: match },
+				{ $match: matchWithConversion },
 				{ $sort: { createdAt: Direction.DESC } },
 				{
 					$facet: {
@@ -97,7 +108,14 @@ export class FollowService {
 				},
 			])
 			.exec();
-		if (!result[0]) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		
+		// Handle case where no results are found
+		if (!result.length || !result[0]) {
+			return {
+				list: [],
+				metaCounter: [{ total: 0 }],
+			};
+		}
 
 		return result[0];
 	}
@@ -108,10 +126,21 @@ export class FollowService {
 
 		const match: T = { followingId: search?.followingId };
 		console.log('Match', match);
+		console.log('Search followingId type:', typeof search?.followingId);
+		console.log('Search followingId value:', search?.followingId);
+		
+		// Try to match with both ObjectId and string versions
+		const matchWithConversion: T = { 
+			$or: [
+				{ followingId: search?.followingId },
+				{ followingId: search?.followingId?.toString() }
+			]
+		};
+		console.log('Match with conversion:', matchWithConversion);
 
 		const result = await this.followModel
 			.aggregate([
-				{ $match: match },
+				{ $match: matchWithConversion },
 				{ $sort: { createdAt: Direction.DESC } },
 				{
 					$facet: {
@@ -119,7 +148,7 @@ export class FollowService {
 							{ $skip: (page - 1) * limit },
 							{ $limit: limit },
 							lookupAuhMemberLiked(memberId, '$followerId'),
-							lookupAuhMemberFollowed({ followerId: memberId, followingId: '$followingId' }),
+							lookupAuhMemberFollowed({ followerId: memberId, followingId: '$followerId' }),
 							lookupFollowerData,
 							{ $unwind: { path: '$followerData', preserveNullAndEmptyArrays: true } },
 						],
@@ -128,7 +157,14 @@ export class FollowService {
 				},
 			])
 			.exec();
-		if (!result[0]) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		
+		// Handle case where no results are found
+		if (!result.length || !result[0]) {
+			return {
+				list: [],
+				metaCounter: [{ total: 0 }],
+			};
+		}
 
 		return result[0];
 	}
