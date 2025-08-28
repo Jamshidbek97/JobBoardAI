@@ -112,6 +112,18 @@ export class JobResolver {
     return await this.jobService.likeTargetJob(memberId, likeRefId);
   }
 
+  @UseGuards(WithoutGuard)
+  @Query(() => Jobs)
+  public async getSimilarJobs(
+    @AuthMember('_id') memberId: ObjectId,
+    @Args('jobId') jobId: string,
+    @Args('limit', { nullable: true }) limit?: number,
+  ): Promise<Jobs> {
+    console.log('Query: getSimilarJobs');
+    const targetJobId = shapeIntoMongooseObjectId(jobId);
+    return await this.jobService.getSimilarJobs(memberId, targetJobId, limit);
+  }
+
   /** ADMIN */
   @Roles(MemberType.ADMIN)
   @UseGuards(RolesGuard)

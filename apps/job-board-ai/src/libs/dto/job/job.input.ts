@@ -77,6 +77,15 @@ export class JobInput {
   @Field(() => String, { nullable: true })
   jobDesc?: string;
 
+  // Application-related fields
+  @IsOptional()
+  @Field(() => Date, { nullable: true })
+  applicationDeadline?: Date;
+
+  @IsOptional()
+  @Field(() => Number, { nullable: true })
+  maxApplications?: number;
+
   memberId: ObjectId;
 }
 

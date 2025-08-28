@@ -42,12 +42,7 @@ export class JobService {
 
   public async createJob(input: JobInput): Promise<Job> {
     try {
-      const existing = await this.jobModel.findOne({
-        memberId: input.memberId,
-        positionTitle: input.positionTitle,
-        companyName: input.companyName,
-      });
-      if (existing) throw new ConflictException('You already posted this job.');
+     
       if (!input.memberId)
         throw new BadRequestException('Member ID is missing');
       const result = await await this.jobModel.create(input);
@@ -258,11 +253,6 @@ export class JobService {
 
     const result = await this.jobModel
       .aggregate([
-        {
-          $addFields: {
-            memberId: { $toObjectId: '$memberId' },
-          },
-        },
         { $match: match },
         { $sort: sort },
         {
@@ -270,7 +260,11 @@ export class JobService {
             list: [
               { $skip: (input.page - 1) * input.limit },
               { $limit: input.limit },
-
+              {
+                $addFields: {
+                  memberId: { $toObjectId: '$memberId' },
+                },
+              },
               lookupMember,
               {
                 $unwind: {
@@ -315,6 +309,92 @@ export class JobService {
       throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
 
     return result;
+  }
+
+  public async getSimilarJobs(
+    memberId: ObjectId,
+    jobId: ObjectId,
+    limit: number = 6,
+  ): Promise<Jobs> {
+    // Get the target job to find similar ones
+    const targetJob: Job = await this.jobModel
+      .findOne({ _id: jobId, jobStatus: JobStatus.OPEN })
+      .exec();
+    
+    if (!targetJob) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+
+    // Simple similarity match using $or to find jobs with similar characteristics
+    const similarJobs = await this.jobModel
+      .aggregate([
+        {
+          $match: {
+            _id: { $ne: jobId }, 
+            jobStatus: JobStatus.OPEN,
+            $or: [
+            
+              {
+                jobType: targetJob.jobType,
+                jobLocation: targetJob.jobLocation,
+              },
+            
+              {
+                jobType: targetJob.jobType,
+              },
+            
+              {
+                jobSalary: {
+                  $gte: targetJob.jobSalary * 0.7,
+                  $lte: targetJob.jobSalary * 1.3,
+                },
+              },
+             
+              {
+                educationLevel: targetJob.educationLevel,
+              },
+            ],
+          },
+        },
+        // Add a score based on similarity
+        {
+          $addFields: {
+            similarityScore: {
+              $sum: [
+                { $cond: [{ $eq: ['$jobType', targetJob.jobType] }, 3, 0] },
+                { $cond: [{ $eq: ['$jobLocation', targetJob.jobLocation] }, 2, 0] },
+                { $cond: [{ $eq: ['$educationLevel', targetJob.educationLevel] }, 1, 0] },
+                { $cond: [{ $eq: ['$employmentLevel', targetJob.employmentLevel] }, 1, 0] },
+              ],
+            },
+          },
+        },
+        // Sort by similarity score (descending) then by creation date
+        {
+          $sort: {
+            similarityScore: -1,
+            createdAt: -1,
+          },
+        },
+        { $limit: limit },
+        {
+          $addFields: {
+            memberId: { $toObjectId: '$memberId' },
+          },
+        },
+        lookupAuhMemberLiked(memberId),
+        lookupMember,
+        {
+          $unwind: {
+            path: '$memberData',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ])
+      .exec();
+
+    return {
+      list: similarJobs,
+      metaCounter: [{ total: similarJobs.length }],
+    };
   }
 
   /**Admin */
@@ -405,6 +485,32 @@ export class JobService {
       .findByIdAndUpdate(
         _id,
         { $inc: { [targetKey]: modifier } },
+        { new: true },
+      )
+      .exec();
+  }
+
+  public async addApplicationToJob(jobId: ObjectId, applicationId: string): Promise<Job> {
+    return await this.jobModel
+      .findByIdAndUpdate(
+        jobId,
+        {
+          $inc: { applicationCount: 1 },
+          $push: { applications: applicationId },
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
+  public async removeApplicationFromJob(jobId: ObjectId, applicationId: string): Promise<Job> {
+    return await this.jobModel
+      .findByIdAndUpdate(
+        jobId,
+        {
+          $inc: { applicationCount: -1 },
+          $pull: { applications: applicationId },
+        },
         { new: true },
       )
       .exec();

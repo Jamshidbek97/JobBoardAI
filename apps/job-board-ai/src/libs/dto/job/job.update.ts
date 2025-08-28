@@ -76,4 +76,13 @@ export class JobUpdate {
   @IsOptional()
   @Field(() => Date, { nullable: true })
   constructedAt?: Date;
+
+  // Application-related fields
+  @IsOptional()
+  @Field(() => Date, { nullable: true })
+  applicationDeadline?: Date;
+
+  @IsOptional()
+  @Field(() => Number, { nullable: true })
+  maxApplications?: number;
 }

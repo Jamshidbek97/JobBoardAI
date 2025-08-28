@@ -49,6 +49,9 @@ export class Job {
   jobComments: number;
 
   @Field(() => Int)
+  jobApplications: number;
+
+  @Field(() => Int)
   jobRank: number;
 
   @Field(() => [String], { nullable: true })
@@ -74,6 +77,19 @@ export class Job {
 
   @Field(() => Date, { nullable: true })
   deletedAt?: Date;
+
+  // Application-related fields
+  @Field(() => [String], { nullable: true })
+  applications?: string[];
+
+  @Field(() => Int)
+  applicationCount: number;
+
+  @Field(() => Date, { nullable: true })
+  applicationDeadline?: Date;
+
+  @Field(() => Int, { nullable: true })
+  maxApplications?: number;
 
   @Field(() => Date)
   createdAt: Date;

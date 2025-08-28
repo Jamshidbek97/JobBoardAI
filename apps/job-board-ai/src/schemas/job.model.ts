@@ -56,6 +56,9 @@ export class Job extends Document {
   jobComments: number;
 
   @Prop({ default: 0 })
+  jobApplications: number;
+
+  @Prop({ default: 0 })
   jobRank: number;
 
   @Prop({ type: String, required: true })
@@ -66,6 +69,19 @@ export class Job extends Document {
 
   @Prop({ type: Date })
   archivedAt?: Date;
+
+  // Application-related fields
+  @Prop({ type: [String], default: [] })
+  applications: string[]; // Array of application IDs
+
+  @Prop({ type: Number, default: 0 })
+  applicationCount: number;
+
+  @Prop({ type: Date })
+  applicationDeadline?: Date;
+
+  @Prop({ type: Number })
+  maxApplications?: number;
 }
 
 export const JobSchema = SchemaFactory.createForClass(Job);
