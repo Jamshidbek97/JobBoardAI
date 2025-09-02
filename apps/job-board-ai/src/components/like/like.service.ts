@@ -135,24 +135,20 @@ export class LikeService {
   private async createLikeNotification(likeInput: LikeInput): Promise<void> {
     try {
       let notificationTitle = '';
-      let notificationGroup = '';
-      let relatedEntityId = '';
+      let notificationGroup: NotificationGroup;
 
       switch (likeInput.likeGroup) {
         case LikeGroup.MEMBER:
           notificationTitle = 'Someone liked your profile!';
           notificationGroup = NotificationGroup.MEMBER;
-          relatedEntityId = likeInput.likeRefId.toString();
           break;
         case LikeGroup.JOB:
           notificationTitle = 'Someone liked your job posting!';
           notificationGroup = NotificationGroup.JOB;
-          relatedEntityId = likeInput.likeRefId.toString();
           break;
         case LikeGroup.ARTICLE:
           notificationTitle = 'Someone liked your article!';
           notificationGroup = NotificationGroup.ARTICLE;
-          relatedEntityId = likeInput.likeRefId.toString();
           break;
       }
 
@@ -176,7 +172,7 @@ export class LikeService {
 
   private async deleteLikeNotification(likeInput: LikeInput): Promise<void> {
     try {
-      let relatedEntityType = '';
+      let relatedEntityType: string;
       
       switch (likeInput.likeGroup) {
         case LikeGroup.JOB:

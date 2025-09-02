@@ -146,24 +146,20 @@ export class CommentService {
   ): Promise<void> {
     try {
       let notificationTitle = '';
-      let notificationGroup = '';
-      let relatedEntityId = '';
+      let notificationGroup: NotificationGroup;
 
       switch (commentInput.commentGroup) {
         case CommentGroup.MEMBER:
           notificationTitle = 'Someone commented on your profile!';
           notificationGroup = NotificationGroup.MEMBER;
-          relatedEntityId = commentInput.commentRefId;
           break;
         case CommentGroup.JOB:
           notificationTitle = 'Someone commented on your job posting!';
           notificationGroup = NotificationGroup.JOB;
-          relatedEntityId = commentInput.commentRefId;
           break;
         case CommentGroup.ARTICLE:
           notificationTitle = 'Someone commented on your article!';
           notificationGroup = NotificationGroup.ARTICLE;
-          relatedEntityId = commentInput.commentRefId;
           break;
       }
 
@@ -174,9 +170,9 @@ export class CommentService {
           notificationGroup: notificationGroup,
           notificationTitle,
           notificationDesc: 'You received a new comment!',
-          receiverId: commentInput.commentRefId, // who was commented on
-          ...(commentInput.commentGroup === CommentGroup.JOB && { jobId: commentInput.commentRefId }),
-          ...(commentInput.commentGroup === CommentGroup.ARTICLE && { articleId: commentInput.commentRefId }),
+          receiverId: commentInput.commentRefId.toString(), // who was commented on
+          ...(commentInput.commentGroup === CommentGroup.JOB && { jobId: commentInput.commentRefId.toString() }),
+          ...(commentInput.commentGroup === CommentGroup.ARTICLE && { articleId: commentInput.commentRefId.toString() }),
         }
       );
     } catch (error) {
