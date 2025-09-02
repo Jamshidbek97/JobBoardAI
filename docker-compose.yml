@@ -1,0 +1,33 @@
+services:
+  jobBoardAi-api:
+    container_name: job-board-ai
+    restart: always
+    image: node:18-alpine
+    ports:
+      - 4001:3007
+    volumes:
+      - ./:/usr/src/jobBoardAi
+    working_dir: /usr/src/jobBoardAi
+    networks:
+      - monorepo-network
+    command: ["sh", "-c", "npm install && npm run build && npm run start:prod"]
+
+  jobBoardAi-batch:
+    container_name: jobBoardAi-batch
+    restart: unless-stopped
+    image: node:18-alpine
+    ports:
+      - 4002:3008
+    volumes:
+      - ./:/usr/src/jobBoardAi
+    working_dir: /usr/src/jobBoardAi
+    networks:
+      - monorepo-network
+    command: ["sh", "-c", "npm install && npm run build job-board-batch && npm run start:prod:batch"]
+
+networks:
+  monorepo-network:
+    driver: bridge
+
+
+
