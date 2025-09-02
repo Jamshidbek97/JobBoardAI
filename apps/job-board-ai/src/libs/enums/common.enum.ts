@@ -39,6 +39,7 @@ export enum Message {
 	SUCCESS = 'Success',
 	OPERATION_FAILED = 'Operation failed',
 	OPERATION_SUCCESSFUL = 'Operation successful',
+	NOT_SUBSCRIBED = 'Not subscribed',
 }
 
 export enum Direction {
