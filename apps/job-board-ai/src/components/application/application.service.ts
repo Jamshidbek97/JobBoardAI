@@ -8,6 +8,8 @@ import { Direction, Message } from '../../libs/enums/common.enum';
 import { lookupMember, lookupJob, lookupApplicant, lookupCompany, shapeIntoMongooseObjectId } from '../../libs/config';
 import { JobService } from '../job/job.service';
 import { MemberService } from '../member/member.service';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType, NotificationGroup } from '../../libs/enums/notification.enum';
 import { T } from '../../libs/types/common';
 
 @Injectable()
@@ -16,6 +18,7 @@ export class ApplicationService {
     @InjectModel('Application') private readonly applicationModel: Model<Application>,
     private readonly jobService: JobService,
     private readonly memberService: MemberService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   public async createApplication(
@@ -76,6 +79,9 @@ export class ApplicationService {
         shapeIntoMongooseObjectId(input.jobId),
         result._id.toString()
       );
+
+      // Create notification for job poster
+      await this.createApplicationNotification(applicantId, job.memberId.toString(), job.positionTitle, 'APPLICATION');
 
       return result;
     } catch (err) {
@@ -181,6 +187,16 @@ export class ApplicationService {
 
     if (!result) {
       throw new InternalServerErrorException(Message.UPDATE_FAILED);
+    }
+
+    // Create notification for status changes
+    if (updateData.status && updateData.status !== existingApplication.status) {
+      await this.createApplicationStatusNotification(
+        existingApplication.applicantId,
+        existingApplication.companyId,
+        updateData.status,
+        existingApplication.jobId
+      );
     }
 
     return result;
@@ -418,5 +434,75 @@ export class ApplicationService {
     );
 
     return result;
+  }
+
+  private async createApplicationNotification(
+    applicantId: ObjectId,
+    companyId: string,
+    jobTitle: string,
+    type: 'APPLICATION'
+  ): Promise<void> {
+    try {
+      // Get applicant member data for notification
+      const applicantMember = await this.memberService.getMember(null, applicantId);
+      
+      await this.notificationService.createNotification(
+        applicantId, // authorId (who applied)
+        {
+          notificationType: NotificationType.APPLICATION,
+          notificationGroup: NotificationGroup.APPLICATION,
+          notificationTitle: `New application received for ${jobTitle}`,
+          notificationDesc: `${applicantMember.memberNick} has applied for your job posting`,
+          receiverId: companyId, // job poster
+          jobId: companyId, // job ID
+        }
+      );
+    } catch (error) {
+      console.error('Failed to create application notification:', error);
+    }
+  }
+
+  private async createApplicationStatusNotification(
+    applicantId: string,
+    companyId: string,
+    status: ApplicationStatus,
+    jobId: string
+  ): Promise<void> {
+    try {
+      // Get company member data for notification
+      const companyMember = await this.memberService.getMember(null, shapeIntoMongooseObjectId(companyId));
+      
+      let statusMessage = '';
+      switch (status) {
+        case ApplicationStatus.REVIEWING:
+          statusMessage = 'Your application is under review';
+          break;
+        case ApplicationStatus.ACCEPTED:
+          statusMessage = 'Congratulations! Your application has been accepted';
+          break;
+        case ApplicationStatus.REJECTED:
+          statusMessage = 'Your application has been reviewed but not selected';
+          break;
+        case ApplicationStatus.WITHDRAWN:
+          statusMessage = 'Your application has been withdrawn';
+          break;
+        default:
+          statusMessage = 'Your application status has been updated';
+      }
+
+      await this.notificationService.createNotification(
+        shapeIntoMongooseObjectId(companyId), // authorId (company)
+        {
+          notificationType: NotificationType.APPLICATION_STATUS,
+          notificationGroup: NotificationGroup.APPLICATION,
+          notificationTitle: `Application Status Update`,
+          notificationDesc: statusMessage,
+          receiverId: applicantId, // applicant
+          jobId: jobId,
+        }
+      );
+    } catch (error) {
+      console.error('Failed to create application status notification:', error);
+    }
   }
 }

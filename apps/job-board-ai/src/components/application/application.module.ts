@@ -5,6 +5,7 @@ import { ApplicationService } from './application.service';
 import { ApplicationSchema } from '../../schemas/Application.model';
 import { JobModule } from '../job/job.module';
 import { MemberModule } from '../member/member.module';
+import { NotificationModule } from '../notification/notification.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -14,6 +15,7 @@ import { AuthModule } from '../auth/auth.module';
     ]),
     JobModule,
     MemberModule,
+    NotificationModule,
     AuthModule,
   ],
   providers: [ApplicationResolver, ApplicationService],

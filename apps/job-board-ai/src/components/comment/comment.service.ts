@@ -16,8 +16,10 @@ import { Direction, Message } from '../../libs/enums/common.enum';
 import { CommentGroup, CommentStatus } from '../../libs/enums/comment.enum';
 import { CommentUpdate } from '../../libs/dto/comment/comment.update';
 import { T } from '../../libs/types/common';
-import { lookupMember } from '../../libs/config';
+import { lookupMember, lookupJob, lookupBoardArticle, shapeIntoMongooseObjectId } from '../../libs/config';
 import { JobService } from '../job/job.service';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType, NotificationGroup } from '../../libs/enums/notification.enum';
 
 @Injectable()
 export class CommentService {
@@ -26,6 +28,7 @@ export class CommentService {
     private readonly memberService: MemberService,
     private readonly jobService: JobService,
     private readonly boardArticleService: BoardArticleService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   public async createComment(
@@ -64,6 +67,10 @@ export class CommentService {
         break;
     }
     if (!result) throw new InternalServerErrorException(Message.CREATE_FAILED);
+
+    // Create notification for comment
+    await this.createCommentNotification(memberId, input);
+
     return result;
   }
 
@@ -131,5 +138,49 @@ export class CommentService {
     if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
     console.log('Deleted Comment:', result);
     return result;
+  }
+
+  private async createCommentNotification(
+    memberId: ObjectId,
+    commentInput: CommentInput,
+  ): Promise<void> {
+    try {
+      let notificationTitle = '';
+      let notificationGroup = '';
+      let relatedEntityId = '';
+
+      switch (commentInput.commentGroup) {
+        case CommentGroup.MEMBER:
+          notificationTitle = 'Someone commented on your profile!';
+          notificationGroup = NotificationGroup.MEMBER;
+          relatedEntityId = commentInput.commentRefId;
+          break;
+        case CommentGroup.JOB:
+          notificationTitle = 'Someone commented on your job posting!';
+          notificationGroup = NotificationGroup.JOB;
+          relatedEntityId = commentInput.commentRefId;
+          break;
+        case CommentGroup.ARTICLE:
+          notificationTitle = 'Someone commented on your article!';
+          notificationGroup = NotificationGroup.ARTICLE;
+          relatedEntityId = commentInput.commentRefId;
+          break;
+      }
+
+      await this.notificationService.createNotification(
+        memberId, // authorId (who commented)
+        {
+          notificationType: NotificationType.COMMENT,
+          notificationGroup: notificationGroup,
+          notificationTitle,
+          notificationDesc: 'You received a new comment!',
+          receiverId: commentInput.commentRefId, // who was commented on
+          ...(commentInput.commentGroup === CommentGroup.JOB && { jobId: commentInput.commentRefId }),
+          ...(commentInput.commentGroup === CommentGroup.ARTICLE && { articleId: commentInput.commentRefId }),
+        }
+      );
+    } catch (error) {
+      console.error('Failed to create notification:', error);
+    }
   }
 }
