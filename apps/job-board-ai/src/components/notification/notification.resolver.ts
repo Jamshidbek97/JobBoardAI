@@ -27,7 +27,6 @@ export class NotificationResolver {
     @Args('input') input: NotificationInquiry,
     @AuthMember('_id') memberId: ObjectId,
   ): Promise<Notifications> {
-    console.log('Query: getNotifications');
     return await this.notificationService.getNotifications(memberId, input);
   }
 
