@@ -20,14 +20,18 @@ export class NotificationService {
     @InjectModel('Notification') private readonly notificationModel: Model<Notification>,
   ) {}
 
-  public async getNotifications(
+    public async getNotifications(
     memberId: ObjectId,
     input: NotificationInquiry,
   ): Promise<Notifications> {
     const { page, limit, search, sort = 'createdAt', direction = Direction.DESC } = input;
+    
+    // Ensure sort field is valid
+    const validSortField = sort && ['createdAt', 'updatedAt'].includes(sort) ? sort : 'createdAt';
+    const validDirection = direction === Direction.DESC ? -1 : 1;
 
     // Build match criteria
-    const match: T = { receiverId: memberId.toString() };
+    const match: T = { receiverId: memberId };
 
     if (search?.authorId) match.authorId = search.authorId;
     if (search?.notificationType) match.notificationType = search.notificationType;
@@ -37,106 +41,150 @@ export class NotificationService {
     if (search?.articleId) match.articleId = search.articleId;
     if (search?.isRead !== undefined) {
       // Convert isRead boolean to notificationStatus
-      match.notificationStatus = search.isRead ? NotificationStatus.READ : NotificationStatus.WAIT;
+      match.notificationStatus = search.isRead ? NotificationStatus.WAIT : NotificationStatus.READ;
     }
-
-    const result = await this.notificationModel
-      .aggregate([
-        { $match: match },
-        { $sort: { [sort]: direction } },
-        {
-          $facet: {
-            list: [
-              { $skip: (page - 1) * limit },
-              { $limit: limit },
-              {
-                $addFields: {
-                  authorId: { $toObjectId: '$authorId' },
-                  receiverId: { $toObjectId: '$receiverId' },
-                  jobId: { $toObjectId: '$jobId' },
-                  articleId: { $toObjectId: '$articleId' },
+    
+    // Check if pagination is the issue
+    const rawCount = await this.notificationModel.countDocuments(match).exec();
+    const skipValue = (page - 1) * limit;
+    let effectiveSkip = skipValue;
+    
+    if (skipValue >= rawCount) {
+      // Adjust to page 1 to show results
+      effectiveSkip = 0;
+    }
+    
+    // Execute the aggregation pipeline
+    try {
+      const result = await this.notificationModel
+        .aggregate([
+          { $match: match },
+          { $sort: { [validSortField]: validDirection } },
+          {
+            $facet: {
+              list: [
+                { $skip: effectiveSkip },
+                { $limit: limit },
+                {
+                  $addFields: {
+                    authorId: { 
+                      $cond: [
+                        { $ne: ['$authorId', null] },
+                        { $toObjectId: '$authorId' },
+                        null
+                      ]
+                    },
+                    receiverId: { 
+                      $cond: [
+                        { $ne: ['$receiverId', null] },
+                        { $toObjectId: '$receiverId' },
+                        null
+                      ]
+                    },
+                    jobId: { 
+                      $cond: [
+                        { $ne: ['$jobId', null] },
+                        { $toObjectId: '$jobId' },
+                        null
+                      ]
+                    },
+                    articleId: { 
+                      $cond: [
+                        { $ne: ['$articleId', null] },
+                        { $toObjectId: '$articleId' },
+                        null
+                      ]
+                    },
+                  },
                 },
-              },
-              lookupMember,
-              {
-                $unwind: {
-                  path: '$memberData',
-                  preserveNullAndEmptyArrays: true,
+                {
+                  $lookup: {
+                    from: 'members',
+                    localField: 'authorId',
+                    foreignField: '_id',
+                    as: 'memberData',
+                  },
                 },
-              },
-              {
-                $addFields: {
-                  authorData: '$memberData',
-                  senderData: '$memberData',
-                  // Map backend fields to frontend expected fields
-                  type: '$notificationType',
-                  title: '$notificationTitle',
-                  message: '$notificationDesc',
-                  senderId: '$authorId',
-                  recipientId: '$receiverId',
-                  isRead: { $eq: ['$notificationStatus', NotificationStatus.READ] },
-                  isActive: true,
-                  readAt: { $cond: [{ $eq: ['$notificationStatus', NotificationStatus.READ] }, '$updatedAt', null] },
-                  relatedEntityId: { $cond: [{ $ne: ['$jobId', null] }, '$jobId', '$articleId'] },
-                  relatedEntityType: { $cond: [{ $ne: ['$jobId', null] }, 'JOB', 'ARTICLE'] },
+                {
+                  $unwind: {
+                    path: '$memberData',
+                    preserveNullAndEmptyArrays: true,
+                  },
                 },
-              },
-              {
-                $lookup: {
-                  from: 'members',
-                  localField: 'receiverId',
-                  foreignField: '_id',
-                  as: 'receiverData',
+                {
+                  $addFields: {
+                    authorData: '$memberData',
+                    senderData: '$memberData',
+                    // Map backend fields to frontend expected fields
+                    type: '$notificationType',
+                    title: '$notificationTitle',
+                    message: '$notificationDesc',
+                    senderId: '$authorId',
+                    recipientId: '$receiverId',
+                    isRead: { $eq: ['$notificationStatus', NotificationStatus.READ] },
+                    isActive: true,
+                    readAt: { $cond: [{ $eq: ['$notificationStatus', NotificationStatus.READ] }, '$updatedAt', null] },
+                    relatedEntityId: { $cond: [{ $ne: ['$jobId', null] }, '$jobId', '$articleId'] },
+                    relatedEntityType: { $cond: [{ $ne: ['$jobId', null] }, 'JOB', 'ARTICLE'] },
+                  },
                 },
-              },
-              {
-                $unwind: {
-                  path: '$receiverData',
-                  preserveNullAndEmptyArrays: true,
+                {
+                  $lookup: {
+                    from: 'members',
+                    localField: 'receiverId',
+                    foreignField: '_id',
+                    as: 'receiverData',
+                  },
                 },
-              },
-              {
-                $addFields: {
-                  recipientData: '$receiverData',
+                {
+                  $unwind: {
+                    path: '$receiverData',
+                    preserveNullAndEmptyArrays: true,
+                  },
                 },
-              },
-              lookupJob,
-              {
-                $unwind: {
-                  path: '$jobData',
-                  preserveNullAndEmptyArrays: true,
+                {
+                  $addFields: {
+                    recipientData: '$receiverData',
+                  },
                 },
-              },
-              lookupBoardArticle,
-              {
-                $unwind: {
-                  path: '$articleData',
-                  preserveNullAndEmptyArrays: true,
+                lookupJob,
+                {
+                  $unwind: {
+                    path: '$jobData',
+                    preserveNullAndEmptyArrays: true,
+                  },
                 },
-              },
-            ],
-            metaCounter: [{ $count: 'total' }],
+                lookupBoardArticle,
+                {
+                  $unwind: {
+                    path: '$articleData',
+                    preserveNullAndEmptyArrays: true,
+                  },
+                },
+              ],
+              metaCounter: [{ $count: 'total' }],
+            },
           },
-        },
-      ])
-      .exec();
-
-    if (!result.length) {
+        ])
+        .exec();
+      
+      return result[0];
+    } catch (error) {
       return {
         list: [],
         metaCounter: [{ total: 0 }],
       };
     }
-
-    return result[0];
   }
 
   public async getUnreadNotificationsCount(memberId: ObjectId): Promise<UnreadNotificationsCount> {
+    const query = {
+      receiverId: memberId,
+      notificationStatus: NotificationStatus.WAIT,
+    };
+    
     const count = await this.notificationModel
-      .countDocuments({
-        receiverId: memberId.toString(),
-        notificationStatus: NotificationStatus.WAIT,
-      })
+      .countDocuments(query)
       .exec();
 
     return { count };
@@ -320,6 +368,34 @@ export class NotificationService {
         _id: { $in: objectIds },
         receiverId: memberId.toString(),
       })
+      .exec();
+
+    return result.deletedCount > 0;
+  }
+
+  public async deleteNotificationByCriteria(
+    authorId: string,
+    receiverId: string,
+    notificationType: string,
+    relatedEntityId?: string,
+    relatedEntityType?: string,
+  ): Promise<boolean> {
+    const criteria: any = {
+      authorId: authorId,
+      receiverId: receiverId,
+      notificationType: notificationType,
+    };
+
+    if (relatedEntityId) {
+      if (relatedEntityType === 'JOB') {
+        criteria.jobId = relatedEntityId;
+      } else if (relatedEntityType === 'ARTICLE') {
+        criteria.articleId = relatedEntityId;
+      }
+    }
+
+    const result = await this.notificationModel
+      .deleteMany(criteria)
       .exec();
 
     return result.deletedCount > 0;
