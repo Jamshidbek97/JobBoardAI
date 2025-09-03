@@ -11,7 +11,7 @@ services:
     working_dir: /usr/src/jobBoardAi
     networks:
       - monorepo-network
-    command: ["sh", "-c", "npm install && npm run build job-board-ai && npm run start:prod job-board-ai"]
+    command: ["sh", "-c", "npm install && npm run build job-board-ai && node dist/apps/job-board-ai/main.js"]
 
   jobBoardAi-batch:
     container_name: jobBoardAi-batch
@@ -26,7 +26,7 @@ services:
     networks:
       - monorepo-network
 
-    command: ["sh", "-c", "npm install && npm run build job-board-batch && npm run start:prod job-board-batch"]
+    command: ["sh", "-c", "npm install && npm run build job-board-batch && node dist/apps/job-board-batch/main.js"]
 
 networks:
   monorepo-network:
