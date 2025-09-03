@@ -1,5 +1,5 @@
 # Multi-stage build for production
-FROM node:18-alpine AS builder
+FROM node:20.11.0 AS builder
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -20,7 +20,7 @@ COPY libs/ ./libs/
 RUN npm run build job-board-ai
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:20.11.0-alpine AS production
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
