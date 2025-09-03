@@ -28,7 +28,9 @@ export enum Message {
 	REQUEST_NOT_ALLOWED = 'Request not allowed',
 	PROVIDE_ALLOWED_FILE_TYPE = 'Please provide allowed file type: jpg, jpeg, png, pdf',
 	PROVIDE_ALLOWED_FILE_SIZE = 'Please provide allowed file size: 5MB',
+	INVALID_UPLOAD_TARGET = 'Invalid upload target',
 	SELF_SUBSCRIPTION_DENIED = 'Self subscription denied',
+	ALREADY_SUBSCRIBED = 'Already subscribed to this member',
 	SERVICE_UNAVAILABLE = 'Service unavailable',
 	CONFLICT = 'Conflict',
 	CREATED = 'Created',
@@ -37,6 +39,7 @@ export enum Message {
 	SUCCESS = 'Success',
 	OPERATION_FAILED = 'Operation failed',
 	OPERATION_SUCCESSFUL = 'Operation successful',
+	NOT_SUBSCRIBED = 'Not subscribed',
 }
 
 export enum Direction {

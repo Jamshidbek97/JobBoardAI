@@ -1,6 +1,12 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 import { ObjectId } from 'mongoose';
-import { JobLocation, JobStatus, JobType } from '../../enums/job.enum';
+import {
+  EducationLevel,
+  EmploymentLevel,
+  JobLocation,
+  JobStatus,
+  JobType,
+} from '../../enums/job.enum';
 import { Member, TotalCounter } from '../member/member';
 import { MeLiked } from '../like/like';
 
@@ -19,22 +25,19 @@ export class Job {
   jobLocation: JobLocation;
 
   @Field(() => String)
-  jobAddress: string;
-
-  @Field(() => String)
-  jobTitle: string;
+  positionTitle: string;
 
   @Field(() => Number)
   jobSalary: number;
 
+  @Field(() => [String], { nullable: true })
+  skillsRequired?: string[];
+
   @Field(() => Number)
   experienceYears: number;
 
-  @Field(() => Int)
-  jobBeds: number;
-
-  @Field(() => Int)
-  jobRooms: number;
+  @Field(() => EducationLevel)
+  educationLevel: EducationLevel;
 
   @Field(() => Int)
   jobViews: number;
@@ -46,6 +49,9 @@ export class Job {
   jobComments: number;
 
   @Field(() => Int)
+  jobApplications: number;
+
+  @Field(() => Int)
   jobRank: number;
 
   @Field(() => [String], { nullable: true })
@@ -54,14 +60,14 @@ export class Job {
   @Field(() => String)
   companyLogo: string;
 
+  @Field(() => EmploymentLevel, { nullable: true })
+  employmentLevel?: EmploymentLevel;
+
   @Field(() => String, { nullable: true })
   jobDesc?: string;
 
-  @Field(() => Boolean)
-  jobBarter: boolean;
-
-  @Field(() => Boolean)
-  jobRent: boolean;
+  @Field(() => String, { nullable: true })
+  companyName?: string;
 
   @Field(() => String)
   memberId: ObjectId;
@@ -72,8 +78,18 @@ export class Job {
   @Field(() => Date, { nullable: true })
   deletedAt?: Date;
 
+  // Application-related fields
+  @Field(() => [String], { nullable: true })
+  applications?: string[];
+
+  @Field(() => Int)
+  applicationCount: number;
+
   @Field(() => Date, { nullable: true })
-  constructedAt?: Date;
+  applicationDeadline?: Date;
+
+  @Field(() => Int, { nullable: true })
+  maxApplications?: number;
 
   @Field(() => Date)
   createdAt: Date;

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -41,7 +42,10 @@ export class JobService {
 
   public async createJob(input: JobInput): Promise<Job> {
     try {
-      const result = await this.jobModel.create(input);
+     
+      if (!input.memberId)
+        throw new BadRequestException('Member ID is missing');
+      const result = await await this.jobModel.create(input);
       await this.memberService.memberStatsEditor({
         _id: result.memberId,
         targetKey: 'memberPostedJobs',
@@ -102,7 +106,7 @@ export class JobService {
     let { jobStatus, closedAt, deletedAt, _id } = input;
     const search: T = {
       _id: _id,
-      memberId: memberId,
+      memberId: memberId.toString(), // Convert ObjectId to string since memberId is stored as string
       jobStatus: JobStatus.OPEN,
     };
 
@@ -132,10 +136,13 @@ export class JobService {
     };
 
     this.shapeMatchQuery(match, input);
-    console.log('match', match);
-    const jobs = await this.jobModel.find({}).limit(1);
-    console.log('Example job._id:', jobs[0]._id);
+    console.log('query', input);
+    console.log('match condition:', match);
 
+    // Debug: Check total jobs in database
+    const totalJobs = await this.jobModel.countDocuments({});
+    console.log('Total jobs in database:', totalJobs);
+    
     const result = await this.jobModel
       .aggregate([
         { $match: match },
@@ -145,9 +152,19 @@ export class JobService {
             list: [
               { $skip: (input.page - 1) * input.limit },
               { $limit: input.limit },
+              {
+                $addFields: {
+                  memberId: { $toObjectId: '$memberId' },
+                },
+              },
               lookupAuhMemberLiked(memberId),
               lookupMember,
-              { $unwind: '$memberData' },
+              {
+                $unwind: {
+                  path: '$memberData',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
             ],
             metaCounter: [{ $count: 'total' }],
           },
@@ -164,23 +181,28 @@ export class JobService {
     const {
       memberId,
       locationList,
-      roomsList,
-      bedsList,
+      educationLevelList,
       typeList,
-      pricesRange: salaryRange,
+      employmentLevels,
+      skillsRequired,
+      isRemote,
+      salaryRange,
       periodsRange,
       experienceRange,
       options,
       text,
     } = input.search;
 
-    if (memberId) match.memberId = shapeIntoMongooseObjectId(memberId);
+    if (memberId) match.memberId = memberId; // Don't convert to ObjectId since memberId is stored as string
     if (locationList && locationList.length)
       match.jobLocation = { $in: locationList };
-    if (roomsList && roomsList.length) match.jobRooms = { $in: roomsList };
-    if (bedsList && bedsList.length) match.jobBeds = { $in: bedsList };
+    if (educationLevelList && educationLevelList.length)
+      match.educationLevel = { $in: educationLevelList };
     if (typeList && typeList.length) match.jobType = { $in: typeList };
-
+    if (employmentLevels?.length)
+      match.employmentLevel = { $in: employmentLevels };
+    if (skillsRequired?.length) match.skillsRequired = { $all: skillsRequired };
+    if (typeof isRemote === 'boolean') match.isRemote = isRemote;
     if (salaryRange)
       match.jobSalary = { $gte: salaryRange.start, $lte: salaryRange.end };
     if (periodsRange)
@@ -191,7 +213,7 @@ export class JobService {
         $lte: experienceRange.end,
       };
 
-    if (text) match.jobTitle = { $regex: new RegExp(text, 'i') };
+    if (text) match.positionTitle = { $regex: new RegExp(text, 'i') };
     if (options) {
       match['$or'] = options.map((ele) => {
         return { [ele]: true };
@@ -222,7 +244,7 @@ export class JobService {
       throw new BadRequestException(Message.REQUEST_NOT_ALLOWED);
 
     const match: T = {
-      memberId: memberId,
+      memberId: memberId.toString(), // Convert ObjectId to string since memberId is stored as string
       jobStatus: jobStatus ?? { $ne: JobStatus.DELETE },
     };
     const sort: T = {
@@ -238,8 +260,18 @@ export class JobService {
             list: [
               { $skip: (input.page - 1) * input.limit },
               { $limit: input.limit },
+              {
+                $addFields: {
+                  memberId: { $toObjectId: '$memberId' },
+                },
+              },
               lookupMember,
-              { $unwind: '$memberData' },
+              {
+                $unwind: {
+                  path: '$memberData',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
             ],
             metaCounter: [{ $count: 'total' }],
           },
@@ -279,6 +311,92 @@ export class JobService {
     return result;
   }
 
+  public async getSimilarJobs(
+    memberId: ObjectId,
+    jobId: ObjectId,
+    limit: number = 6,
+  ): Promise<Jobs> {
+    // Get the target job to find similar ones
+    const targetJob: Job = await this.jobModel
+      .findOne({ _id: jobId, jobStatus: JobStatus.OPEN })
+      .exec();
+    
+    if (!targetJob) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+
+    // Simple similarity match using $or to find jobs with similar characteristics
+    const similarJobs = await this.jobModel
+      .aggregate([
+        {
+          $match: {
+            _id: { $ne: jobId }, 
+            jobStatus: JobStatus.OPEN,
+            $or: [
+            
+              {
+                jobType: targetJob.jobType,
+                jobLocation: targetJob.jobLocation,
+              },
+            
+              {
+                jobType: targetJob.jobType,
+              },
+            
+              {
+                jobSalary: {
+                  $gte: targetJob.jobSalary * 0.7,
+                  $lte: targetJob.jobSalary * 1.3,
+                },
+              },
+             
+              {
+                educationLevel: targetJob.educationLevel,
+              },
+            ],
+          },
+        },
+        // Add a score based on similarity
+        {
+          $addFields: {
+            similarityScore: {
+              $sum: [
+                { $cond: [{ $eq: ['$jobType', targetJob.jobType] }, 3, 0] },
+                { $cond: [{ $eq: ['$jobLocation', targetJob.jobLocation] }, 2, 0] },
+                { $cond: [{ $eq: ['$educationLevel', targetJob.educationLevel] }, 1, 0] },
+                { $cond: [{ $eq: ['$employmentLevel', targetJob.employmentLevel] }, 1, 0] },
+              ],
+            },
+          },
+        },
+        // Sort by similarity score (descending) then by creation date
+        {
+          $sort: {
+            similarityScore: -1,
+            createdAt: -1,
+          },
+        },
+        { $limit: limit },
+        {
+          $addFields: {
+            memberId: { $toObjectId: '$memberId' },
+          },
+        },
+        lookupAuhMemberLiked(memberId),
+        lookupMember,
+        {
+          $unwind: {
+            path: '$memberData',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ])
+      .exec();
+
+    return {
+      list: similarJobs,
+      metaCounter: [{ total: similarJobs.length }],
+    };
+  }
+
   /**Admin */
   public async getAllJobsByAdmin(input: AllJobsInquiry): Promise<Jobs> {
     const { jobStatus, jobLocationList } = input.search;
@@ -293,6 +411,11 @@ export class JobService {
 
     const result = await this.jobModel
       .aggregate([
+        {
+          $addFields: {
+            memberId: { $toObjectId: '$memberId' },
+          },
+        },
         { $match: match },
         { $sort: sort },
         {
@@ -317,13 +440,17 @@ export class JobService {
   public async updateJobByAdmin(input: JobUpdate): Promise<Job> {
     let { jobStatus, closedAt, deletedAt, _id } = input;
 
+    if (![JobStatus.CLOSED, JobStatus.DELETE].includes(jobStatus))
+      throw new BadRequestException('Invalid status update');
+
     const search: T = {
       _id: _id,
       jobStatus: JobStatus.OPEN,
     };
 
-    if (jobStatus === JobStatus.CLOSED) closedAt = moment().toDate();
-    else if (jobStatus === JobStatus.DELETE) deletedAt = moment().toDate();
+    if (jobStatus === JobStatus.CLOSED) input.closedAt = moment().toDate();
+    else if (jobStatus === JobStatus.DELETE)
+      input.deletedAt = moment().toDate();
 
     const result = await this.jobModel
       .findOneAndUpdate(search, input, { new: true })
@@ -343,7 +470,7 @@ export class JobService {
   public async removeJobByAdmin(jobId: ObjectId): Promise<Job> {
     const search: T = {
       _id: jobId,
-      jobStatus: JobStatus.DELETE,
+      jobStatus: JobStatus.CLOSED,
     };
 
     const result = await this.jobModel.findOneAndDelete(search).exec();
@@ -358,6 +485,32 @@ export class JobService {
       .findByIdAndUpdate(
         _id,
         { $inc: { [targetKey]: modifier } },
+        { new: true },
+      )
+      .exec();
+  }
+
+  public async addApplicationToJob(jobId: ObjectId, applicationId: string): Promise<Job> {
+    return await this.jobModel
+      .findByIdAndUpdate(
+        jobId,
+        {
+          $inc: { applicationCount: 1 },
+          $push: { applications: applicationId },
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
+  public async removeApplicationFromJob(jobId: ObjectId, applicationId: string): Promise<Job> {
+    return await this.jobModel
+      .findByIdAndUpdate(
+        jobId,
+        {
+          $inc: { applicationCount: -1 },
+          $pull: { applications: applicationId },
+        },
         { new: true },
       )
       .exec();

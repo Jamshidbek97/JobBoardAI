@@ -6,6 +6,8 @@ import { MemberService } from '../member/member.service';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { FollowInquiry } from '../../libs/dto/follow/follow.input';
 import { T } from '../../libs/types/common';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType, NotificationGroup } from '../../libs/enums/notification.enum';
 import {
 	lookupAuhMemberFollowed,
 	lookupAuhMemberLiked,
@@ -18,20 +20,34 @@ export class FollowService {
 	constructor(
 		@InjectModel('Follow') private readonly followModel: Model<Follower | Following>,
 		private readonly memberService: MemberService,
+		private readonly notificationService: NotificationService,
 	) {}
 
 	public async subscribe(followerId: ObjectId, followingId: ObjectId): Promise<Follower> {
-		if (followingId.toString() === followerId.toString()) {
+		if (followerId.toString() === followingId.toString()) {
 			throw new InternalServerErrorException(Message.SELF_SUBSCRIPTION_DENIED);
 		}
 
 		const targetMember = await this.memberService.getMember(null, followingId);
 		if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
-		const result = await this.registerSubscription(followingId, followerId);
+		// Check if subscription already exists
+		const existingSubscription = await this.followModel.findOne({ 
+			followerId: followerId, 
+			followingId: followingId 
+		}).exec();
+		
+		if (existingSubscription) {
+			throw new BadRequestException(Message.ALREADY_SUBSCRIBED);
+		}
+
+		const result = await this.registerSubscription(followerId, followingId);
 
 		await this.memberService.memberStatsEditor({ _id: followerId, targetKey: 'memberFollowings', modifier: 1 });
 		await this.memberService.memberStatsEditor({ _id: followingId, targetKey: 'memberFollowers', modifier: 1 });
+
+		// Create notification for the person being followed
+		await this.createFollowNotification(followerId, followingId);
 
 		return result;
 	}
@@ -46,16 +62,52 @@ export class FollowService {
 	}
 
 	public async unsubscribe(followerId: ObjectId, followingId: ObjectId): Promise<Follower> {
+		if (followerId.toString() === followingId.toString()) {
+			throw new InternalServerErrorException(Message.SELF_SUBSCRIPTION_DENIED);
+		}
+
 		const targetMember = await this.memberService.getMember(null, followingId);
 		if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
-		const result = await this.followModel.findOneAndDelete({ followerId: followingId, followingId: followerId }).exec();
-		if (!result) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		const existingSubscription = await this.followModel.findOne({ 
+			followerId: followerId, 
+			followingId: followingId 
+		}).exec();
+		
+		if (!existingSubscription) {
+			throw new BadRequestException(Message.NO_DATA_FOUND);
+		}
+
+		const result = await this.followModel.findOneAndDelete({ 
+			followerId: followerId, 
+			followingId: followingId 
+		}).exec();
 
 		await this.memberService.memberStatsEditor({ _id: followerId, targetKey: 'memberFollowings', modifier: -1 });
 		await this.memberService.memberStatsEditor({ _id: followingId, targetKey: 'memberFollowers', modifier: -1 });
 
 		return result;
+	}
+
+	private async createFollowNotification(followerId: ObjectId, followingId: ObjectId): Promise<void> {
+		try {
+			// Get follower member data for notification
+			const followerMember = await this.memberService.getMember(null, followerId);
+			
+			await this.notificationService.createNotification(
+				followerId, // authorId (who followed)
+				{
+					notificationType: NotificationType.FOLLOW,
+					notificationGroup: NotificationGroup.MEMBER,
+					notificationTitle: `${followerMember.memberNick} started following you!`,
+					notificationDesc: 'You have a new follower',
+					receiverId: followingId.toString(), // who was followed
+				}
+			);
+		} catch (error) {
+			console.error('Failed to create follow notification:', error);
+			// Don't throw error - notification failure shouldn't break follow functionality
+		}
 	}
 
 	public async getMemberFollowings(memberId: ObjectId, input: FollowInquiry): Promise<Followings> {
@@ -64,10 +116,21 @@ export class FollowService {
 
 		const match: T = { followerId: search?.followerId };
 		console.log('Match', match);
+		console.log('Search followerId type:', typeof search?.followerId);
+		console.log('Search followerId value:', search?.followerId);
+		
+		// Try to match with both ObjectId and string versions
+		const matchWithConversion: T = { 
+			$or: [
+				{ followerId: search?.followerId },
+				{ followerId: search?.followerId?.toString() }
+			]
+		};
+		console.log('Match with conversion:', matchWithConversion);
 
 		const result = await this.followModel
 			.aggregate([
-				{ $match: match },
+				{ $match: matchWithConversion },
 				{ $sort: { createdAt: Direction.DESC } },
 				{
 					$facet: {
@@ -84,7 +147,14 @@ export class FollowService {
 				},
 			])
 			.exec();
-		if (!result[0]) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		
+		// Handle case where no results are found
+		if (!result.length || !result[0]) {
+			return {
+				list: [],
+				metaCounter: [{ total: 0 }],
+			};
+		}
 
 		return result[0];
 	}
@@ -95,10 +165,21 @@ export class FollowService {
 
 		const match: T = { followingId: search?.followingId };
 		console.log('Match', match);
+		console.log('Search followingId type:', typeof search?.followingId);
+		console.log('Search followingId value:', search?.followingId);
+		
+		// Try to match with both ObjectId and string versions
+		const matchWithConversion: T = { 
+			$or: [
+				{ followingId: search?.followingId },
+				{ followingId: search?.followingId?.toString() }
+			]
+		};
+		console.log('Match with conversion:', matchWithConversion);
 
 		const result = await this.followModel
 			.aggregate([
-				{ $match: match },
+				{ $match: matchWithConversion },
 				{ $sort: { createdAt: Direction.DESC } },
 				{
 					$facet: {
@@ -106,7 +187,7 @@ export class FollowService {
 							{ $skip: (page - 1) * limit },
 							{ $limit: limit },
 							lookupAuhMemberLiked(memberId, '$followerId'),
-							lookupAuhMemberFollowed({ followerId: memberId, followingId: '$followingId' }),
+							lookupAuhMemberFollowed({ followerId: memberId, followingId: '$followerId' }),
 							lookupFollowerData,
 							{ $unwind: { path: '$followerData', preserveNullAndEmptyArrays: true } },
 						],
@@ -115,7 +196,14 @@ export class FollowService {
 				},
 			])
 			.exec();
-		if (!result[0]) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+		
+		// Handle case where no results are found
+		if (!result.length || !result[0]) {
+			return {
+				list: [],
+				metaCounter: [{ total: 0 }],
+			};
+		}
 
 		return result[0];
 	}

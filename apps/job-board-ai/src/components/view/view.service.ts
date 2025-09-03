@@ -41,20 +41,31 @@ export class ViewService {
         { $sort: { updatedAt: -1 } },
         {
           $lookup: {
-            from: 'properties',
+            from: 'jobs',
             localField: 'viewRefId',
             foreignField: '_id',
             as: 'visitedJob',
           },
         },
         { $unwind: '$visitedJob' },
+
         {
           $facet: {
             list: [
               { $skip: (page - 1) * limit },
               { $limit: limit },
+              {
+                $addFields: {
+                  memberId: { $toObjectId: '$memberId' },
+                },
+              },
               lookupVisit,
-              { $unwind: '$visitedJob.memberData' },
+              {
+                $unwind: {
+                  path: '$visitedJob.memberData',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
             ],
             metaCounter: [{ $count: 'total' }],
           },

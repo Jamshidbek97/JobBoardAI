@@ -17,15 +17,13 @@ export class BoardArticleInput {
 	articleTitle: string;
 
 	@IsNotEmpty()
-	@Length(3, 250)
+	@Length(3, 111250)
 	@Field(() => String)
 	articleContent: string;
 
 	@IsOptional()
 	@Field(() => String, { nullable: true })
 	articleImage?: string;
-
-	memberId?: ObjectId;
 }
 
 @InputType()
@@ -40,7 +38,7 @@ class BAISearch {
 
 	@IsOptional()
 	@Field(() => String, { nullable: true })
-	memberId?: ObjectId;
+	memberId?: string;
 }
 
 @InputType()

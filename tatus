@@ -1,0 +1,21 @@
+warning: in the working copy of 'apps/job-board-ai/src/components/components.module.ts', CRLF will be replaced by LF the next time Git touches it
+[1mdiff --git a/apps/job-board-ai/src/components/components.module.ts b/apps/job-board-ai/src/components/components.module.ts[m
+[1mindex 2040b52..a51e41a 100644[m
+[1m--- a/apps/job-board-ai/src/components/components.module.ts[m
+[1m+++ b/apps/job-board-ai/src/components/components.module.ts[m
+[36m@@ -7,6 +7,7 @@[m [mimport { ViewModule } from './view/view.module';[m
+ import { FollowModule } from './follow/follow.module';[m
+ import { BoardArticleModule } from './board-article/board-article.module';[m
+ import { JobModule } from './job/job.module';[m
+[32m+[m[32mimport { ApplicationModule } from './application/application.module';[m
+ [m
+ @Module({[m
+   imports: [[m
+[36m@@ -18,6 +19,7 @@[m [mimport { JobModule } from './job/job.module';[m
+     BoardArticleModule,[m
+     MemberModule,[m
+     AuthModule,[m
+[32m+[m[32m    ApplicationModule,[m
+   ],[m
+ })[m
+ export class ComponentsModule {}[m

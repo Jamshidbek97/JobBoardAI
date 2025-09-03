@@ -7,6 +7,8 @@ import { ViewModule } from './view/view.module';
 import { FollowModule } from './follow/follow.module';
 import { BoardArticleModule } from './board-article/board-article.module';
 import { JobModule } from './job/job.module';
+import { ApplicationModule } from './application/application.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { JobModule } from './job/job.module';
     BoardArticleModule,
     MemberModule,
     AuthModule,
+    ApplicationModule,
+    NotificationModule,
   ],
 })
 export class ComponentsModule {}

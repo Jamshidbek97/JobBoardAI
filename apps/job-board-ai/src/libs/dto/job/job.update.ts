@@ -1,6 +1,12 @@
 import { Field, Int, InputType } from '@nestjs/graphql';
 import { ObjectId } from 'mongoose';
-import { JobLocation, JobStatus, JobType } from '../../enums/job.enum';
+import {
+  EducationLevel,
+  EmploymentLevel,
+  JobLocation,
+  JobStatus,
+  JobType,
+} from '../../enums/job.enum';
 import { IsInt, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
 
 @InputType()
@@ -29,27 +35,26 @@ export class JobUpdate {
   @IsOptional()
   @Length(3, 100)
   @Field(() => String, { nullable: true })
-  jobTitle?: string;
+  positionTitle?: string;
 
   @IsOptional()
   @Field(() => Number, { nullable: true })
   jobSalary?: number;
 
   @IsOptional()
+  @Field(() => [String], { nullable: true })
+  skillsRequired?: string[];
+
+  @IsOptional()
   @Field(() => Number, { nullable: true })
   experienceYears?: number;
 
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Field(() => Int, { nullable: true })
-  jobBeds?: number;
+  @Field(() => EducationLevel, { nullable: true })
+  educationLevel?: EducationLevel;
 
   @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Field(() => Int, { nullable: true })
-  jobRooms?: number;
+  @Field(() => EmploymentLevel, { nullable: true })
+  employmentLevel?: EmploymentLevel;
 
   @IsOptional()
   @Field(() => [String], { nullable: true })
@@ -64,14 +69,6 @@ export class JobUpdate {
   @Field(() => String, { nullable: true })
   jobDesc?: string;
 
-  @IsOptional()
-  @Field(() => Boolean, { nullable: true })
-  jobBarter?: boolean;
-
-  @IsOptional()
-  @Field(() => Boolean, { nullable: true })
-  jobRent: boolean;
-
   closedAt?: Date;
 
   deletedAt?: Date;
@@ -79,4 +76,13 @@ export class JobUpdate {
   @IsOptional()
   @Field(() => Date, { nullable: true })
   constructedAt?: Date;
+
+  // Application-related fields
+  @IsOptional()
+  @Field(() => Date, { nullable: true })
+  applicationDeadline?: Date;
+
+  @IsOptional()
+  @Field(() => Number, { nullable: true })
+  maxApplications?: number;
 }

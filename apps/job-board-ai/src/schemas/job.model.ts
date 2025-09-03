@@ -4,7 +4,8 @@ import {
   JobType,
   JobStatus,
   JobLocation,
-  SalaryRange,
+  EducationLevel,
+  EmploymentLevel,
 } from '../libs/enums/job.enum';
 
 @Schema({ timestamps: true })
@@ -24,14 +25,26 @@ export class Job extends Document {
   @Prop({ required: true })
   positionTitle: string;
 
-  @Prop({ type: String, enum: SalaryRange, required: true })
-  salaryRange: SalaryRange;
+  @Prop({ type: Number, required: true })
+  jobSalary: number;
+
+  @Prop({ type: Number, required: true })
+  experienceYears: number;
+
+  @Prop({ type: String, enum: EducationLevel, required: true })
+  educationLevel: EducationLevel;
+
+  @Prop({ type: String, enum: EmploymentLevel, required: true })
+  employmentLevel: EmploymentLevel;
 
   @Prop({ type: String })
-  description?: string;
+  jobDesc?: string;
 
-  @Prop([String])
-  companyLogo?: string[];
+  @Prop({ type: [String] })
+  skillsRequired?: string[];
+
+  @Prop({ type: String })
+  companyLogo?: string;
 
   @Prop({ default: 0 })
   jobViews: number;
@@ -41,6 +54,9 @@ export class Job extends Document {
 
   @Prop({ default: 0 })
   jobComments: number;
+
+  @Prop({ default: 0 })
+  jobApplications: number;
 
   @Prop({ default: 0 })
   jobRank: number;
@@ -53,6 +69,19 @@ export class Job extends Document {
 
   @Prop({ type: Date })
   archivedAt?: Date;
+
+  // Application-related fields
+  @Prop({ type: [String], default: [] })
+  applications: string[]; // Array of application IDs
+
+  @Prop({ type: Number, default: 0 })
+  applicationCount: number;
+
+  @Prop({ type: Date })
+  applicationDeadline?: Date;
+
+  @Prop({ type: Number })
+  maxApplications?: number;
 }
 
 export const JobSchema = SchemaFactory.createForClass(Job);
